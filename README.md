@@ -1,5 +1,7 @@
 # Sticky Notes for X11
 
+![Sticky Notes desktop and editor](docs/title.png)
+
 Paper-colored notes that float above your desktop, with a local web editor and optional reminders. Built with Python and Tkinter; no pip packages, account, or internet connection needed.
 
 ## Install on a new computer
@@ -75,10 +77,10 @@ The default web address is `127.0.0.1:8765`. Open the **full editor link printed
 - **Move:** drag a note's title bar or its colored header.
 - **Resize:** drag its window borders or the bottom-right corner grip.
 - **Edit:** click Edit on the desktop note or its card in the browser.
-- **Hide:** click Hide or close the note's window. Its contents stay saved.
+- **Hide:** click Hide. Its contents stay saved. Closing a note's window asks you to choose **Hide**, **Delete**, or **Cancel**.
 - **Show:** use Show on a hidden note in the editor, or Show all.
 - **Color:** select a pastel or use Custom for any background color. Text automatically switches between dark and light for readability.
-- **Delete:** delete a note in the editor; confirmation is required.
+- **Delete:** click Delete beside Edit on a desktop note, or delete it in the editor; confirmation is required. Choosing Delete in the close dialog also permanently removes the note.
 - **Quit:** use Quit notes app in the editor or press Ctrl+C in the launching terminal. Closing a desktop note only hides that note.
 
 The operating system's window manager honors the always-on-top request. Notes remain normal resizable windows so window-manager controls and keyboard navigation work. Closing the browser does not stop the app.
@@ -168,6 +170,19 @@ rm "${XDG_DATA_HOME:-$HOME/.local/share}/applications/sticky-notes.desktop"
 You can then remove the cloned project directory. Your saved notes remain in the separate data directory unless you explicitly delete them.
 
 ## Development and tests
+
+Prompts share a themed dialog instead of browser or OS confirmation boxes. In the web editor:
+
+```js
+const choice = await dialog(['Delete', 'Cancel'], 'Delete this note?');
+if (choice === 'Delete') {
+  // Perform the action.
+}
+```
+
+The result is the selected label, or `null` on Escape. Prompts are queued, text is rendered literally, Cancel receives initial focus when present, and Tab stays inside the modal. Desktop prompts use `dialog(parent, buttons, text, color=...)` from `sticky_notes.desktop`, returning a label or `None`; they share the note's color and font. The browser's unsaved-changes warning when closing a tab remains browser-controlled.
+
+`tests/browser_dialog.js` checks the web modal interactions through the same Playwright runner as `tests/browser_smoke.js`. Use a fresh temporary app instance; this test quits it at the end.
 
 ```sh
 python3 -m unittest discover -s tests -v

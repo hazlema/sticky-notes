@@ -1,7 +1,7 @@
 """Tk windows; all methods are called on the main thread."""
 import time
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import simpledialog
 
 
 def clamp_geometry(x, y, width, height, screen_width, screen_height):
@@ -13,6 +13,51 @@ def clamp_geometry(x, y, width, height, screen_width, screen_height):
 def ink_for(color):
     r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
     return '#202d32' if r * .299 + g * .587 + b * .114 > 145 else '#ffffff'
+
+
+class PromptDialog(simpledialog.Dialog):
+    """Reusable modal prompt; closing it without a choice returns None."""
+    def __init__(self, parent, buttons, text, title='Sticky notes', color='#f7f9fa'):
+        self.buttons, self.text, self.color = buttons, text, color
+        self.ink = ink_for(color)
+        super().__init__(parent, title)
+
+    def body(self, master):
+        self.attributes('-topmost', True)
+        self.configure(background=self.color)
+        master.configure(background=self.color)
+        tk.Label(master, text=self.text, background=self.color, foreground=self.ink,
+                 font=('Sans', 11), wraplength=360, justify='left').pack(padx=20, pady=20)
+
+    def buttonbox(self):
+        box = tk.Frame(self, background=self.color)
+        for label in self.buttons:
+            destructive = label in ('Delete', 'Discard', 'Quit')
+            button = tk.Button(box, text=label, font=('Sans', 11, 'bold'),
+                               background='#963e32' if destructive else self.color,
+                               foreground='white' if destructive else self.ink,
+                               activebackground='#294e64', activeforeground='white',
+                               relief='flat', padx=14, pady=8,
+                               command=lambda value=label: self.choose(value))
+            button.pack(side='left', padx=5, pady=(0, 16))
+            if label == 'Cancel' or len(self.buttons) == 1:
+                self.initial_focus = button
+        box.pack(padx=15)
+        self.bind('<Escape>', self.cancel)
+        self.bind('<Return>', self.activate_focused)
+
+    def activate_focused(self, event):
+        widget = self.focus_get()
+        if isinstance(widget, tk.Button):
+            widget.invoke()
+
+    def choose(self, choice):
+        self.result = choice
+        self.cancel()
+
+
+def dialog(parent, buttons, text, **options):
+    return PromptDialog(parent, buttons, text, **options).result
 
 
 class NoteWindow:
@@ -28,7 +73,7 @@ class NoteWindow:
         self.window.minsize(220, 160)
         self.window.attributes('-topmost', True)
         self.window.configure(highlightthickness=3)
-        self.window.protocol('WM_DELETE_WINDOW', lambda: self.action('visibility', visible=False))
+        self.window.protocol('WM_DELETE_WINDOW', self.close_requested)
         self.header = tk.Frame(self.window, cursor='fleur')
         self.header.pack(fill='x', padx=10, pady=(8, 0))
         self.title = tk.Label(self.header, anchor='w', font=('Sans', 11, 'bold'), cursor='fleur')
@@ -45,6 +90,9 @@ class NoteWindow:
         self.edit_button = tk.Button(self.footer, text='Edit', relief='flat', borderwidth=0,
                                      command=lambda: desktop.open_editor(self.id))
         self.edit_button.pack(side='left')
+        self.delete_button = tk.Button(self.footer, text='Delete', relief='flat', borderwidth=0,
+                                       command=self.delete_requested)
+        self.delete_button.pack(side='left')
         self.status = tk.Label(self.footer, font=('Sans', 9), anchor='w')
         self.status.pack(side='left', padx=5)
         self.grip = tk.Label(self.footer, text='◢', cursor='bottom_right_corner')
@@ -69,6 +117,23 @@ class NoteWindow:
 
     def action(self, command, **payload):
         self.desktop.action(command, {'id': self.id, **payload})
+
+    def close_requested(self):
+        choice = dialog(self.window, ['Hide', 'Delete', 'Cancel'],
+                        'What would you like to do with this note?\n\nHide keeps it saved. Delete cannot be undone.',
+                        color=self.last_note['color'])
+        if not self.window.winfo_exists():
+            return
+        if choice == 'Hide':
+            self.action('visibility', visible=False)
+        elif choice == 'Delete':
+            self.action('delete')
+
+    def delete_requested(self):
+        choice = dialog(self.window, ['Delete', 'Cancel'],
+                        'Delete this note? This cannot be undone.', color=self.last_note['color'])
+        if choice == 'Delete' and self.window.winfo_exists():
+            self.action('delete')
 
     def start_drag(self, event):
         self.drag_origin = (event.x_root, event.y_root, self.window.winfo_x(), self.window.winfo_y())
@@ -115,7 +180,8 @@ class NoteWindow:
             widget.configure(background=color)
         for widget in (self.title, self.status, self.grip):
             widget.configure(background=color, foreground=ink)
-        for widget in (self.hide_button, self.edit_button, self.dismiss_button, self.snooze_button):
+        for widget in (self.hide_button, self.edit_button, self.delete_button,
+                       self.dismiss_button, self.snooze_button):
             widget.configure(background=color, foreground=ink, activebackground=color, activeforeground=ink)
         self.title.configure(text=note['title'] or 'Sticky note')
         self.body.configure(background=color, foreground=ink)
@@ -152,7 +218,7 @@ class Desktop:
             self.store.execute(command, payload, time.time())
             self.refresh()
         except (OSError, ValueError) as error:
-            messagebox.showerror('Could not save note', str(error), parent=self.root)
+            dialog(self.root, ['OK'], str(error), title='Could not save note')
 
     def refresh(self, alert_ids=()):
         notes = self.store.snapshot()

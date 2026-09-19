@@ -10,10 +10,9 @@ import sys
 import threading
 import time
 import tkinter as tk
-from tkinter import messagebox
 import webbrowser
 from .model import Store
-from .desktop import Desktop
+from .desktop import Desktop, dialog
 from .server import Bridge, serve
 from .session import AlreadyRunning, existing_editor, publish_session
 
@@ -64,7 +63,7 @@ def main():
                     print(f'Sticky Notes: {text}', file=sys.stderr, flush=True)
                     if text != last_error:
                         last_error = text
-                        messagebox.showerror('Sticky Notes could not save', text, parent=root)
+                        dialog(root, ['OK'], text, title='Sticky Notes could not save')
 
                 def tk_error(kind, error, traceback):
                     report(error)

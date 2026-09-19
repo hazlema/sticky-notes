@@ -12,6 +12,50 @@ for (const [id, max] of [['hours', 24], ['minutes', 60]]) {
   for (let value = 1; value <= max; value++) $(id).add(new Option(String(value), String(value)));
 }
 
+// Calls are queued so simultaneous prompts cannot replace one another.
+// Resolves to a button label, or null when dismissed with Escape.
+let dialogQueue = Promise.resolve();
+function dialog(buttons, text) {
+  const show = () => new Promise(resolve => {
+    const modal = document.createElement('dialog');
+    modal.className = 'prompt-dialog';
+    modal.setAttribute('aria-labelledby', 'prompt-title');
+    modal.setAttribute('aria-describedby', 'prompt-text');
+    const heading = document.createElement('h2');
+    heading.id = 'prompt-title';
+    heading.textContent = 'Sticky notes';
+    const prompt = document.createElement('p');
+    prompt.id = 'prompt-text';
+    prompt.textContent = text;
+    const actions = document.createElement('div');
+    actions.className = 'prompt-actions';
+    let result = null;
+    for (const label of buttons) {
+      const control = document.createElement('button');
+      control.type = 'button';
+      control.textContent = label;
+      control.className = ['Delete', 'Discard', 'Quit'].includes(label) ? 'danger' : 'quiet';
+      control.autofocus = label === 'Cancel' || buttons.length === 1;
+      control.addEventListener('click', () => { result = label; modal.close(); });
+      actions.append(control);
+    }
+    modal.append(heading, prompt, actions);
+    modal.addEventListener('keydown', event => {
+      if (event.key !== 'Tab') return;
+      const controls = [...actions.querySelectorAll('button')];
+      const index = controls.indexOf(document.activeElement);
+      event.preventDefault();
+      controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length]?.focus();
+    });
+    modal.addEventListener('close', () => { modal.remove(); resolve(result); }, {once:true});
+    document.body.append(modal);
+    modal.showModal();
+  });
+  const pending = dialogQueue.then(show);
+  dialogQueue = pending.catch(() => {});
+  return pending;
+}
+
 function error(message) {
   $('error').textContent = message || '';
   $('error').hidden = !message;
@@ -28,7 +72,9 @@ async function api(path, data) {
 }
 function setBusy(value) {
   busy = value;
-  document.querySelectorAll('button').forEach(button => button.disabled = value);
+  document.querySelectorAll('button').forEach(button => {
+    if (!button.closest('dialog')) button.disabled = value;
+  });
 }
 async function mutate(command, payload, after) {
   if (busy) return;
@@ -92,8 +138,8 @@ function render() {
     actions.append(button('Edit', () => selectNote(note)), button(note.visible ? 'Hide' : 'Show', () => mutate('visibility', {id:note.id, visible:!note.visible})));
     if (note.alert) actions.append(button('Dismiss', () => mutate('dismiss', {id:note.id})), button('Snooze 5m', () => mutate('snooze', {id:note.id})));
     else if (note.deadline) actions.append(button('Cancel timer', () => mutate('cancel', {id:note.id})));
-    actions.append(button('Delete', () => {
-      if (confirm(`Delete “${note.title || 'Untitled note'}”? This cannot be undone.`)) {
+    actions.append(button('Delete', async () => {
+      if (await dialog(['Delete', 'Cancel'], `Delete “${note.title || 'Untitled note'}”? This cannot be undone.`) === 'Delete') {
         mutate('delete', {id:note.id}, () => {if(editing === note.id) resetEditor();});
       }
     }, 'delete'));
@@ -109,8 +155,8 @@ function markDirty() {
   dirty = true;
   $('draft-state').textContent = 'Unsaved changes';
 }
-function canReplaceDraft() {
-  return !dirty || confirm('Discard your unsaved changes?');
+async function canReplaceDraft() {
+  return !dirty || await dialog(['Discard', 'Cancel'], 'Discard your unsaved changes?') === 'Discard';
 }
 function resetEditor() {
   editing = null;
@@ -126,8 +172,8 @@ function resetEditor() {
   timerFields();
   render();
 }
-function selectNote(note, force=false) {
-  if (!force && !canReplaceDraft()) return;
+async function selectNote(note, force=false) {
+  if (!force && !await canReplaceDraft()) return;
   editing = note.id;
   dirty = false;
   $('title').value = note.title;
@@ -194,8 +240,8 @@ $('note-form').addEventListener('submit', event => {
     timerFields();
   });
 });
-$('new-note').addEventListener('click', () => {if(canReplaceDraft()){resetEditor();$('title').focus();}});
-$('reset').addEventListener('click', () => {if(canReplaceDraft()) resetEditor();});
+$('new-note').addEventListener('click', async () => {if(await canReplaceDraft()){resetEditor();$('title').focus();}});
+$('reset').addEventListener('click', async () => {if(await canReplaceDraft()) resetEditor();});
 $('color').addEventListener('input', () => colorSelected($('color').value));
 $('reminder-mode').addEventListener('change', timerFields);
 document.querySelectorAll('[data-color]').forEach(element => element.addEventListener('click', () => {colorSelected(element.dataset.color);markDirty();}));
@@ -206,8 +252,8 @@ document.querySelectorAll('[data-filter]').forEach(element => element.addEventLi
 }));
 $('show-all').addEventListener('click', () => mutate('visibility_all', {visible:true}));
 $('hide-all').addEventListener('click', () => mutate('visibility_all', {visible:false}));
-$('quit').addEventListener('click', () => {
-  if (!confirm('Quit Sticky Notes and close all note windows? Your notes stay saved. Reminders resume when you restart.' + (dirty ? ' Your unsaved draft will be lost.' : ''))) return;
+$('quit').addEventListener('click', async () => {
+  if (await dialog(['Quit', 'Cancel'], 'Quit Sticky Notes and close all note windows? Your notes stay saved. Reminders resume when you restart.' + (dirty ? ' Your unsaved draft will be lost.' : '')) !== 'Quit') return;
   mutate('shutdown', {}, () => {stopped=true;dirty=false;$('connection').textContent='App stopped';$('note-form').querySelectorAll('input,textarea,select').forEach(input => input.disabled=true);});
 });
 window.addEventListener('beforeunload', event => {if(dirty){event.preventDefault();event.returnValue='';}});

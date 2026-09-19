@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from sticky_notes.model import Store
-from sticky_notes.desktop import Desktop, clamp_geometry
+from sticky_notes.desktop import PromptDialog, Desktop, clamp_geometry
 
 
 @unittest.skipUnless(os.environ.get('DISPLAY'), 'An X11 display is required')
@@ -59,6 +59,64 @@ class DesktopTests(unittest.TestCase):
         self.store.execute('dismiss', {'id': note['id']}, 162)
         self.desktop.refresh()
         self.assertNotEqual(view.window.cget('highlightbackground'), '#ce6522')
+
+    def test_close_window_choices(self):
+        for choice in ('cancel', 'hide', 'delete'):
+            with self.subTest(choice=choice):
+                note = self.store.execute('create', {'title': 'Close me'}, 100)
+                self.desktop.refresh()
+                self.root.update()
+                view = self.desktop.windows[note['id']]
+                with patch('sticky_notes.desktop.dialog') as dialog:
+                    dialog.return_value = choice.title()
+                    view.window.tk.call(view.window.protocol('WM_DELETE_WINDOW'))
+                dialog.assert_called_once()
+                saved = {n['id']: n for n in Store(Path(self.temp.name)).snapshot()}
+                if choice == 'delete':
+                    self.assertNotIn(note['id'], saved)
+                    self.assertNotIn(note['id'], self.desktop.windows)
+                else:
+                    self.assertEqual(saved[note['id']]['visible'], choice == 'cancel')
+                    self.assertEqual(view.window.state() == 'withdrawn', choice == 'hide')
+
+    def test_delete_button_requires_confirmation(self):
+        note = self.store.execute('create', {'title': 'Keep until confirmed'}, 100)
+        self.desktop.refresh()
+        self.root.update()
+        view = self.desktop.windows[note['id']]
+        self.assertTrue(view.delete_button.winfo_ismapped())
+        with patch('sticky_notes.desktop.dialog', return_value='Cancel'):
+            view.delete_button.invoke()
+        self.assertIn(note['id'], self.desktop.windows)
+        with patch('sticky_notes.desktop.dialog', return_value='Delete'):
+            view.delete_button.invoke()
+        self.assertNotIn(note['id'], self.desktop.windows)
+        self.assertEqual(Store(Path(self.temp.name)).snapshot(), [])
+
+    def test_real_close_dialog_buttons_and_window_dismissal(self):
+        note = self.store.execute('create', {}, 100)
+        self.desktop.refresh()
+        self.root.update()
+        parent = self.desktop.windows[note['id']].window
+        for choice in ('Hide', 'Delete', 'Cancel', 'window-close'):
+            labels = []
+
+            def respond():
+                dialog = next(child for child in parent.winfo_children()
+                              if isinstance(child, PromptDialog))
+                buttons = [button for frame in dialog.winfo_children()
+                           for button in frame.winfo_children() if isinstance(button, tk.Button)]
+                labels.extend(button.cget('text') for button in buttons)
+                self.assertEqual(dialog.cget('background'), '#ccebd9')
+                if choice == 'window-close':
+                    dialog.tk.call(dialog.protocol('WM_DELETE_WINDOW'))
+                else:
+                    next(button for button in buttons if button.cget('text') == choice).invoke()
+
+            self.root.after(30, respond)
+            dialog = PromptDialog(parent, ['Hide', 'Delete', 'Cancel'], 'A dynamic prompt', color='#ccebd9')
+            self.assertEqual(labels, ['Hide', 'Delete', 'Cancel'])
+            self.assertEqual(dialog.result, None if choice == 'window-close' else choice)
 
     def test_long_title_keeps_hide_control_visible(self):
         note = self.store.execute('create', {'title': 'Long title ' * 18}, 100)
