@@ -21,9 +21,16 @@ async (page) => {
   await page.locator('.card-actions').getByRole('button', {name:'Show', exact:true}).click();
   await page.waitForFunction(() => document.querySelector('.note-meta').textContent === 'On your desktop');
   await page.locator('#reminder-mode').selectOption('set');
-  await page.locator('#minutes').fill('0.05');
+  await page.locator('#hours').selectOption('0');
+  await page.locator('#minutes').selectOption('1');
   await page.locator('#save').click();
   await page.waitForFunction(() => !document.querySelector('#save').disabled);
+  // Shorten the saved timer through the API so the reveal test doesn't wait a minute.
+  await page.evaluate(async () => {
+    const headers = {Authorization:'Bearer '+sessionStorage.getItem('sticky-token'), 'Content-Type':'application/json'};
+    const notes = await (await fetch('/api/notes', {headers})).json();
+    await fetch('/api/command', {method:'POST', headers, body:JSON.stringify({command:'schedule', payload:{id:notes[0].id, minutes:.05}})});
+  });
   await page.locator('.card-actions').getByRole('button', {name:'Hide', exact:true}).click();
   await page.waitForSelector('.note-card.alert', {timeout:10000});
   check(await page.locator('.card-actions').getByRole('button', {name:'Hide', exact:true}).count() === 1, 'timer reveals note');

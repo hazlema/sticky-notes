@@ -14,7 +14,7 @@ sudo apt install git python3 python3-tk
 git clone https://github.com/hazlema/sticky-notes.git
 cd sticky-notes
 python3 -m sticky_notes.install
-python3 -m sticky_notes
+python3 -m sticky_notes --editor
 ```
 
 For a private repository, authenticate to GitHub first. With the GitHub CLI:
@@ -57,17 +57,18 @@ From this directory:
 python3 -m sticky_notes
 ```
 
-The app opens its editor in your default browser. Create a note, choose its paper color, and save. Its desktop window appears immediately. You can close the browser and keep the notes running.
+A plain launch restores your saved desktop notes and starts reminders without opening a browser. This is suitable for login/startup commands. To create or edit notes, click the installed icon or run `python3 -m sticky_notes --editor`. Closing the browser leaves the notes running.
 
 Requirements: Linux with an X11 display (including an accessible XWayland display), Python 3.10 or newer, and Tkinter. On Debian/Ubuntu, install Tkinter with `sudo apt install python3-tk`; on Fedora use `sudo dnf install python3-tkinter`. A Wayland compositor may limit XWayland stacking behavior; this app targets X11.
 
 ```sh
-python3 -m sticky_notes --no-browser
+python3 -m sticky_notes --editor     # Open or reopen the editor
+python3 -m sticky_notes --no-browser # Compatibility alias for a plain launch
 python3 -m sticky_notes --port 8766
 python3 -m sticky_notes --data-dir /path/to/your/notes
 ```
 
-The default web address is `127.0.0.1:8765`. Open the **full editor link printed in the terminal**: it includes a random access token that changes each launch. `--port 0` chooses an available port. Launching again with the same data directory reopens its existing editor. With `--no-browser`, it prints the existing editor link and exits.
+The default web address is `127.0.0.1:8765`. Open the **full editor link printed in the terminal**: it includes a random access token that changes each launch. `--port 0` chooses an available port. Launching again with the same data directory reuses the existing instance. Pass `--editor` to open its editor; without it, the command prints the editor link and exits without opening a browser. `--editor` and `--no-browser` cannot be combined. The installed shortcut includes `--editor`.
 
 ## Using your notes
 
@@ -84,7 +85,7 @@ The operating system's window manager honors the always-on-top request. Notes re
 
 ## Reminders
 
-Select **Set a timer…**, enter a duration in minutes, and save. Fractions work too: `0.5` means 30 seconds. When the timer expires, the app shows and raises the note, highlights it, and requests a system bell. Use Dismiss or Snooze 5 min on the note, or the corresponding controls in the editor. Pending timers can be cancelled in the editor.
+Select **Set a timer…**, choose **Hours** (0–24) and **Minutes** (0–60), and save. Both dropdowns start at 0; choose a total of at least 1 minute. For example, 1 hour and 30 minutes sets a 90-minute timer. Minutes can be 60, so 24 hours plus 60 minutes is a 25-hour timer. When the timer expires, the app shows and raises the note, highlights it, and requests a system bell. Use Dismiss or Snooze 5 min on the note, or the corresponding controls in the editor. Pending timers can be cancelled in the editor.
 
 The system bell may be silent depending on your desktop/audio settings. Raising a note does not deliberately move keyboard focus. Timers work while the app is running; they do not launch a stopped app or wake a suspended computer. A missed reminder fires when you next start the app. An already active alert stays active across restarts without repeatedly beeping. Hiding an active alert keeps it hidden until you show it or a snoozed reminder comes due.
 
@@ -144,7 +145,17 @@ Saved notes are separate from the checkout and survive updates.
 - **Notes disappear when closing the terminal:** launching from a terminal may tie the process to that terminal. Use the installed application-menu icon for normal desktop use.
 - **Invalid saved data:** the app preserves the file and reports an error. Restore a known-good backup while the app is stopped.
 
-The app does not currently install automatic startup at login. Click the icon after logging in to restore your notes and resume reminders.
+## Start notes automatically at login
+
+The app does not enable login startup automatically. In your desktop's Startup Applications settings, add a command like this, replacing the path with your actual checkout:
+
+```sh
+sh -c 'cd /path/to/sticky-notes && exec python3 -m sticky_notes'
+```
+
+Do not add `--editor` to the startup command: the default restores visible notes and resumes timers silently. Hidden notes stay hidden unless a reminder comes due. Your normal application-menu shortcut includes `--editor`, so clicking the icon still opens the editor.
+
+After updating from an older version, quit the running app once and rerun `python3 -m sticky_notes.install` so your shortcut picks up `--editor`.
 
 ## Uninstall
 

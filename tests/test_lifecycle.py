@@ -1,3 +1,5 @@
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,3 +16,13 @@ class LifecycleTests(unittest.TestCase):
                         pass
             with instance_lock(path):
                 pass
+
+
+class LauncherTests(unittest.TestCase):
+    def test_menu_shortcut_explicitly_opens_editor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run([sys.executable, '-m', 'sticky_notes.install',
+                                     '--applications-dir', directory], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            entry = (Path(directory) / 'sticky-notes.desktop').read_text()
+            self.assertIn('-m sticky_notes --editor', entry)

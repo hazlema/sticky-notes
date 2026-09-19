@@ -19,3 +19,9 @@ Follow-up: reusable editor launcher
 - Added a native SVG icon and per-user application-menu installer. Closing the browser is distinct from Quit notes app.
 - Regression reproduced original second-launch failure, then passed. Full suite: 23/23, including actual second invocation, browser handoff, private metadata, and metadata cleanup.
 Follow-up review: independent reviewer found no actionable issues in launcher/session handoff. Installed ~/.local/share/applications/sticky-notes.desktop and validated it. No existing notes were restarted or changed by installation.
+Follow-up: startup defaults and timer controls
+- Plain launches now restore notes without opening the editor; --editor explicitly opens/reopens it. --no-browser remains a compatibility alias; flags are mutually exclusive.
+- Installed shortcut updated to include --editor. README documents startup commands and the changed defaults.
+- Timer form uses Hours 0–24 and Minutes 0–60 dropdowns, initially 0. Zero total reports an error; hours/minutes convert to the existing API duration.
+- New regression tests first failed on old launch behavior and missing dropdowns. Final Python suite 25/25 passing. Browser timer test passed all ranges/defaults, zero validation, 90-minute and 25-hour scheduling, and mobile layout; full browser smoke passed in a fresh temporary instance.
+- Independent reviewer found no actionable issues. Test-data bulk cleanup was blocked by approval review; data was left intact and a fresh directory used instead.

@@ -14,10 +14,10 @@ import urllib.request
 
 @unittest.skipUnless(os.environ.get('DISPLAY'), 'An X11 display is required')
 class IntegrationTests(unittest.TestCase):
-    def start_app(self, directory):
-        process = subprocess.Popen([sys.executable, '-m', 'sticky_notes', '--no-browser',
+    def start_app(self, directory, env=None):
+        process = subprocess.Popen([sys.executable, '-m', 'sticky_notes',
                                     '--port', '0', '--data-dir', directory],
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
         self.addCleanup(self.stop_process, process)
         ready, _, _ = select.select([process.stdout], [], [], 5)
         self.assertTrue(ready, 'App did not print its editor link')
@@ -64,7 +64,7 @@ class IntegrationTests(unittest.TestCase):
             browser_script = Path(directory) / 'browser.py'
             browser_log = Path(directory) / 'opened-url.txt'
             browser_script.write_text('from pathlib import Path\nimport sys\nPath(sys.argv[1]).write_text(sys.argv[2])\n')
-            reopened = subprocess.run([sys.executable, '-m', 'sticky_notes', '--data-dir', directory],
+            reopened = subprocess.run([sys.executable, '-m', 'sticky_notes', '--editor', '--data-dir', directory],
                                       env={**os.environ, 'BROWSER': f'{sys.executable} {browser_script} {browser_log} %s'},
                                       capture_output=True, text=True, timeout=8)
             self.assertEqual(reopened.returncode, 0, reopened.stderr)
@@ -76,6 +76,20 @@ class IntegrationTests(unittest.TestCase):
             self.request(base, token, 'shutdown')
             self.assertEqual(process.wait(timeout=5), 0)
             self.assertFalse(session.exists())
+
+    def test_default_launch_never_opens_browser(self):
+        with tempfile.TemporaryDirectory() as directory:
+            browser_script = Path(directory) / 'browser.py'
+            browser_log = Path(directory) / 'opened-url.txt'
+            browser_script.write_text('from pathlib import Path\nimport sys\nPath(sys.argv[1]).write_text(sys.argv[2])\n')
+            env = {**os.environ, 'BROWSER': f'{sys.executable} {browser_script} {browser_log} %s'}
+            process, base, token = self.start_app(directory, env=env)
+            second = subprocess.run([sys.executable, '-m', 'sticky_notes', '--data-dir', directory],
+                                    env=env, capture_output=True, text=True, timeout=8)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            self.request(base, token, 'shutdown')
+            self.assertEqual(process.wait(timeout=5), 0)
+            self.assertFalse(browser_log.exists(), 'Default startup must not launch a browser')
 
     def test_real_app_reminder_shutdown_and_restart(self):
         with tempfile.TemporaryDirectory() as directory:

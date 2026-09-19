@@ -25,7 +25,7 @@ def main():
     entry = '\n'.join([
         '[Desktop Entry]', 'Version=1.0', 'Type=Application', 'Name=Sticky Notes',
         'Comment=Open your sticky note editor; notes keep running when the editor closes',
-        f'Exec={exec_argument(sys.executable)} -m sticky_notes',
+        f'Exec={exec_argument(sys.executable)} -m sticky_notes --editor',
         f'Path={desktop_value(project)}',
         f'Icon={desktop_value(project / "sticky_notes/icon.svg")}',
         'Terminal=false', 'Categories=Utility;',

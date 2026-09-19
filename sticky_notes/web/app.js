@@ -8,6 +8,9 @@ let requestedNote = fragment.get('note');
 history.replaceState(null, '', location.pathname);
 let notes = [], editing = null, filter = 'all', busy = false, dirty = false, stopped = false;
 let refreshSequence = 0, rendered = '';
+for (const [id, max] of [['hours', 24], ['minutes', 60]]) {
+  for (let value = 1; value <= max; value++) $(id).add(new Option(String(value), String(value)));
+}
 
 function error(message) {
   $('error').textContent = message || '';
@@ -144,8 +147,8 @@ function selectNote(note, force=false) {
 function timerFields() {
   const show = $('reminder-mode').value === 'set';
   $('timer-fields').hidden = !show;
+  $('hours').disabled = !show;
   $('minutes').disabled = !show;
-  $('minutes').required = show;
 }
 async function refresh() {
   const sequence = ++refreshSequence;
@@ -174,7 +177,14 @@ $('note-form').addEventListener('submit', event => {
   event.preventDefault();
   const payload = {title:$('title').value, body:$('body').value, color:$('color').value};
   if (editing) payload.id = editing;
-  if ($('reminder-mode').value === 'set') payload.minutes = Number($('minutes').value);
+  if ($('reminder-mode').value === 'set') {
+    payload.minutes = Number($('hours').value) * 60 + Number($('minutes').value);
+    if (payload.minutes < 1) {
+      error('Choose at least 1 minute for your timer.');
+      $('minutes').focus();
+      return;
+    }
+  }
   if ($('reminder-mode').value === 'cancel') payload.minutes = null;
   // Freeze the form while saving so the response cannot erase subsequent typing.
   const inputs = [...$('note-form').querySelectorAll('input,textarea,select')];

@@ -36,7 +36,9 @@ def main():
     parser = argparse.ArgumentParser(description='X11 sticky notes with a local web editor.')
     parser.add_argument('--port', type=int, default=8765, help='local web port (default: 8765; 0 selects a free port)')
     parser.add_argument('--data-dir', type=Path, default=Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local/share') / 'sticky-notes')
-    parser.add_argument('--no-browser', action='store_true', help='print the editor URL without opening it')
+    editor_flags = parser.add_mutually_exclusive_group()
+    editor_flags.add_argument('--editor', action='store_true', help='open the editor (default: restore notes without opening a browser)')
+    editor_flags.add_argument('--no-browser', action='store_true', help='restore notes without opening a browser (compatibility alias for the default)')
     args = parser.parse_args()
     if not 0 <= args.port <= 65535:
         parser.error('port must be between 0 and 65535')
@@ -90,7 +92,7 @@ def main():
                 session_path = publish_session(store.directory, server.server_address[1], token)
                 print(f'Sticky Notes editor: {url}', flush=True)
                 print(f'Notes saved in: {store.path}\nQuit from the editor or press Ctrl+C.', flush=True)
-                if not args.no_browser:
+                if args.editor:
                     open_editor()
                 signal.signal(signal.SIGINT, lambda *_: stop())
                 signal.signal(signal.SIGTERM, lambda *_: stop())
@@ -132,7 +134,7 @@ def main():
         try:
             url = existing_editor(args.data_dir.expanduser())
             print(f'Sticky Notes editor: {url}', flush=True)
-            if not args.no_browser:
+            if args.editor:
                 if not webbrowser.open(url):
                     print('Open the link above in your browser.', flush=True)
             return 0
