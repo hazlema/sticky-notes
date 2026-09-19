@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sticky notes</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand"><span class="paper-mark" aria-hidden="true"></span><div><h1>Sticky notes</h1><p>A little space for what’s on your mind.</p></div></div>
+    <div class="header-actions"><span id="connection" role="status">Connecting…</span><button id="quit" class="quiet" title="Close all note windows and stop reminders">Quit notes app</button></div>
+  </header>
+  <div id="error" role="alert" hidden></div>
+  <main>
+    <section class="board" aria-labelledby="board-title">
+      <div class="board-heading"><div><h2 id="board-title">Your desk</h2><p id="count">No notes yet</p></div><button id="new-note" class="primary">+ New note</button></div>
+      <div class="toolbar"><div class="filters" role="group" aria-label="Filter notes"><button data-filter="all" aria-pressed="true">All</button><button data-filter="visible" aria-pressed="false">On desktop</button><button data-filter="hidden" aria-pressed="false">Hidden</button></div><div class="bulk"><button id="show-all" class="quiet">Show all</button><button id="hide-all" class="quiet">Hide all</button></div></div>
+      <div id="notes" class="note-grid"></div>
+      <div id="empty" class="empty"><div class="empty-paper" aria-hidden="true">Remember<br>something.</div><h3>A clear desk. A fresh start.</h3><p>Create a note here. It will float on your desktop,<br>ready whenever you need it.</p></div>
+    </section>
+    <aside class="editor" aria-labelledby="editor-title">
+      <div class="editor-heading"><h2 id="editor-title">A fresh note</h2><span id="draft-state">Not saved yet</span></div>
+      <form id="note-form">
+        <label for="title">Title <span class="optional">optional</span></label>
+        <input id="title" name="title" maxlength="200" placeholder="What’s on your mind?" autocomplete="off">
+        <label for="body">Note</label>
+        <textarea id="body" name="body" maxlength="100000" rows="9" placeholder="An idea, a small reminder, something to come back to…"></textarea>
+        <fieldset><legend>Paper color</legend><div class="colors"><button type="button" class="swatch yellow" data-color="#fff2a8" aria-label="Yellow" aria-pressed="true"></button><button type="button" class="swatch pink" data-color="#ffd7df" aria-label="Pink" aria-pressed="false"></button><button type="button" class="swatch mint" data-color="#ccebd9" aria-label="Mint" aria-pressed="false"></button><button type="button" class="swatch blue" data-color="#cfe6fb" aria-label="Blue" aria-pressed="false"></button><button type="button" class="swatch lilac" data-color="#e6d7ff" aria-label="Lilac" aria-pressed="false"></button><label class="custom-color" for="color">Custom <input id="color" type="color" value="#fff2a8"></label></div></fieldset>
+        <div class="reminder-section"><label for="reminder-mode">Remind me</label><select id="reminder-mode"><option value="keep">No reminder</option><option value="set">Set a timer…</option><option value="cancel">Remove reminder</option></select><div id="timer-fields" hidden><label for="minutes">In minutes</label><input id="minutes" type="number" min="0.016666666666666666" max="525600" step="any" value="10"></div><p id="timer-status" class="hint">A reminder shows the note, highlights it, and beeps.</p></div>
+        <div class="form-actions"><button type="submit" id="save" class="primary">Create note</button><button type="button" id="reset" class="quiet">Clear</button></div>
+      </form>
+      <p class="local-note"><span aria-hidden="true">●</span> Saved on this computer. Just for you.</p>
+    </aside>
+  </main>
+  <footer>Drag notes to make room. Hide them to clear your desk. They’ll be here when you come back.</footer>
+</body>
+</html>

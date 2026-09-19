@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+.playwright-mcp/
+
+# Local agent metadata and temporary review artifacts
+.agents/
+.codex/
+
+# Personal note data and authentication metadata
+notes.json
+session.json
+.lock
+sticky-notes-backup*.json
+.env
+.env.*
