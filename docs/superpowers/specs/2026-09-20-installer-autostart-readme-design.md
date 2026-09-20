@@ -36,7 +36,7 @@ Reorder into one flow — get it, use it, keep it, fix it, hack it — merging d
 6. Reminders: unchanged.
 7. Start notes automatically at login: rewritten — the installer manages the entry; describes the quiet-restore behavior (no `--editor`), and how to enable later (`--autostart`) or remove (`--uninstall`). The hand-written `sh -c 'cd …'` recipe is deleted.
 8. Saved data, then Back up and restore: content unchanged, now adjacent.
-9. Update: unchanged; rerunning the installer remains correct.
+9. Update: rewritten to lead with stopping the running app before `git pull` — quit from the editor (or Ctrl+C in the launching terminal), with `pgrep`/`pkill` commands to verify nothing is still running; then the existing pull/reinstall/relaunch commands.
 10. Uninstall: becomes `python3 -m sticky_notes.install --uninstall`, noting it removes both entries and that notes data survives.
 11. Troubleshooting: moved near the end; entries unchanged.
 12. Development and tests: unchanged except the project-layout line for `install.py`, which becomes "application-menu launcher and login autostart installation".

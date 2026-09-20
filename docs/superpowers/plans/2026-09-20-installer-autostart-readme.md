@@ -456,6 +456,34 @@ python3 -m sticky_notes.install --uninstall
 You can then remove the cloned project directory. Your saved notes remain in the separate data directory unless you explicitly delete them.
 ````
 
+Replace **## Update** with:
+
+````markdown
+## Update
+
+Stop the running app before updating so the old code is not still holding your notes: use **Quit notes app** in the editor (this saves its last changes), or press Ctrl+C in the terminal that launched it. Confirm nothing is still running:
+
+```sh
+pgrep -af sticky_notes   # no output means the app is stopped
+```
+
+If an instance is still listed and you cannot reach its editor, stop it with:
+
+```sh
+pkill -f "python3 -m sticky_notes"
+```
+
+Then, from your checkout:
+
+```sh
+git pull --ff-only
+python3 -m sticky_notes.install
+python3 -m sticky_notes
+```
+
+Saved notes are separate from the checkout and survive updates.
+````
+
 In **## Development and tests**, change the project-layout line for the installer to:
 
 ```markdown
