@@ -19,10 +19,39 @@ class LifecycleTests(unittest.TestCase):
 
 
 class LauncherTests(unittest.TestCase):
+    def run_install(self, applications_dir, autostart_dir, *flags):
+        return subprocess.run([sys.executable, '-m', 'sticky_notes.install',
+                               '--applications-dir', str(applications_dir),
+                               '--autostart-dir', str(autostart_dir), *flags],
+                              capture_output=True, text=True, stdin=subprocess.DEVNULL)
+
     def test_menu_shortcut_explicitly_opens_editor(self):
-        with tempfile.TemporaryDirectory() as directory:
-            result = subprocess.run([sys.executable, '-m', 'sticky_notes.install',
-                                     '--applications-dir', directory], capture_output=True, text=True)
+        with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
+            result = self.run_install(applications, autostart)
             self.assertEqual(result.returncode, 0, result.stderr)
-            entry = (Path(directory) / 'sticky-notes.desktop').read_text()
+            entry = (Path(applications) / 'sticky-notes.desktop').read_text()
             self.assertIn('-m sticky_notes --editor', entry)
+
+    def test_autostart_flag_writes_quiet_login_entry(self):
+        with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
+            result = self.run_install(applications, autostart, '--autostart')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            entry = (Path(autostart) / 'sticky-notes.desktop').read_text()
+            self.assertIn('-m sticky_notes\n', entry)
+            self.assertNotIn('--editor', entry)
+            self.assertIn('Path=', entry)
+            self.assertIn('X-GNOME-Autostart-enabled=true', entry)
+
+    def test_no_autostart_flag_skips_login_entry(self):
+        with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
+            result = self.run_install(applications, autostart, '--no-autostart')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((Path(applications) / 'sticky-notes.desktop').exists())
+            self.assertFalse((Path(autostart) / 'sticky-notes.desktop').exists())
+
+    def test_non_tty_install_skips_login_entry_with_hint(self):
+        with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
+            result = self.run_install(applications, autostart)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((Path(autostart) / 'sticky-notes.desktop').exists())
+            self.assertIn('--autostart', result.stdout)
