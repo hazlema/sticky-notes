@@ -148,6 +148,8 @@ python3 -m sticky_notes.install
 python3 -m sticky_notes
 ```
 
+See [CHANGELOG.md](CHANGELOG.md) for what changed before you upgrade.
+
 Saved notes are separate from the checkout and survive updates.
 
 ## Uninstall
