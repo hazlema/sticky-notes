@@ -41,6 +41,10 @@ Reorder into one flow — get it, use it, keep it, fix it, hack it — merging d
 11. Troubleshooting: moved near the end; entries unchanged.
 12. Development and tests: unchanged except the project-layout line for `install.py`, which becomes "application-menu launcher and login autostart installation".
 
+## Changelog
+
+Add a `CHANGELOG.md` at the project root in Keep-a-Changelog style, with date-based entries (the project has no version tags). Seed it from git history: one dated section per meaningful past change set (initial app, themed dialogs and desktop deletion controls, quiet startup default and hour/minute reminder selectors), plus a section for this change (installer-managed login autostart, `--uninstall`, README restructure). Entries are short user-facing bullets under `Added`/`Changed`/`Fixed` headings, not commit messages. The README's Update section gains one line pointing readers at `CHANGELOG.md` to see what changed before upgrading.
+
 ## Error handling
 
 - Conflicting flags (`--autostart` with `--no-autostart`, or either with `--uninstall`) exit with an argparse error.

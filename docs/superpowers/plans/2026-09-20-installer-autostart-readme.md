@@ -564,3 +564,79 @@ Expected: `LAUNCHED_OK` printed; process appears without `--editor`.
 ```bash
 git push origin claude/stoic-sammet-b98b60
 ```
+
+---
+
+### Task 6: Changelog (executed after Task 4, before Task 5)
+
+**Files:**
+- Create: `CHANGELOG.md`
+- Modify: `README.md` (one line in the Update section)
+
+**Interfaces:**
+- Consumes: git history (`git log --reverse --date=short --format='%ad %h %s'`) and the restructured README from Task 4.
+- Produces: documentation only.
+
+- [ ] **Step 1: Create CHANGELOG.md**
+
+Run `git log --reverse --date=short --format='%ad %h %s' main` plus the current branch's feature commits to get real dates. Create `CHANGELOG.md` at the project root with this structure (fill the dates from git; summaries below are the required content, expand only if the git history shows something these bullets miss):
+
+````markdown
+# Changelog
+
+Notable changes to Sticky Notes, newest first. The project is tracked by date rather than version numbers.
+
+## <date of this branch's merge work, e.g. 2026-09-20>
+
+### Added
+- The installer now offers to start notes automatically at login (`Start notes automatically at login? [Y/n]`), or non-interactively with `--autostart` / `--no-autostart`. The entry restores notes quietly at login without opening the editor.
+- `python3 -m sticky_notes.install --uninstall` removes the application-menu launcher and the login autostart entry in one step.
+
+### Changed
+- README restructured: one install path, deduplicated requirements, explicit stop-before-upgrade steps, and installer-managed login startup instead of a hand-written startup command.
+
+## <date of commit ef20a57>
+
+### Added
+- Reminder timers now use separate hour (0-24) and minute (0-60) selectors.
+
+### Changed
+- A plain launch (`python3 -m sticky_notes`) starts quietly: it restores notes and resumes timers without opening a browser. Use `--editor` to open the editor.
+
+## <date of commit 2e1b82d>
+
+### Added
+- Themed confirmation dialogs shared by the desktop notes and the web editor.
+- Desktop notes gained Delete controls (with confirmation) beside Edit; closing a note's window asks Hide / Delete / Cancel.
+
+## <date of commit 36a4368>
+
+### Added
+- Initial release: X11 sticky notes that float above the desktop, a local token-authenticated web editor, reminder timers with snooze, pastel and custom colors, and persistent notes under `$XDG_DATA_HOME/sticky-notes/`.
+````
+
+- [ ] **Step 2: Link it from the README Update section**
+
+In `README.md`, in the `## Update` section, insert this line directly before the `Saved notes are separate from the checkout and survive updates.` line:
+
+```markdown
+See [CHANGELOG.md](CHANGELOG.md) for what changed before you upgrade.
+```
+
+- [ ] **Step 3: Verify**
+
+Run: `ls CHANGELOG.md` → file exists.
+Run: `grep -n "CHANGELOG.md" README.md` → exactly one match, inside the Update section.
+Run: `grep -c "^## " CHANGELOG.md` → expected `4` (four dated sections).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add CHANGELOG.md README.md
+git commit -m "$(cat <<'EOF'
+Add a date-based changelog and link it from the README
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+EOF
+)"
+```
