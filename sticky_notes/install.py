@@ -16,22 +16,26 @@ def exec_argument(value):
     return desktop_value('"' + value + '"')
 
 
+def desktop_entry(project, comment, exec_tail, extra_lines):
+    return '\n'.join([
+        '[Desktop Entry]', 'Version=1.0', 'Type=Application', 'Name=Sticky Notes',
+        f'Comment={desktop_value(comment)}',
+        f'Exec={exec_argument(sys.executable)} -m sticky_notes{exec_tail}',
+        f'Path={desktop_value(project)}',
+        f'Icon={desktop_value(project / "sticky_notes/icon.svg")}',
+        'Terminal=false', 'StartupNotify=false', 'StartupWMClass=StickyNotes',
+        *extra_lines, '',
+    ])
+
+
 def main():
     parser = argparse.ArgumentParser(description='Install the Sticky Notes application-menu icon for this user.')
     parser.add_argument('--applications-dir', type=Path,
                         default=Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local/share') / 'applications')
     args = parser.parse_args()
     project = Path(__file__).resolve().parent.parent
-    entry = '\n'.join([
-        '[Desktop Entry]', 'Version=1.0', 'Type=Application', 'Name=Sticky Notes',
-        'Comment=Open your sticky note editor; notes keep running when the editor closes',
-        f'Exec={exec_argument(sys.executable)} -m sticky_notes --editor',
-        f'Path={desktop_value(project)}',
-        f'Icon={desktop_value(project / "sticky_notes/icon.svg")}',
-        'Terminal=false', 'Categories=Utility;',
-        'Keywords=notes;sticky;reminders;', 'StartupNotify=false',
-        'StartupWMClass=StickyNotes', '',
-    ])
+    entry = desktop_entry(project, 'Open your sticky note editor; notes keep running when the editor closes',
+                          ' --editor', ['Categories=Utility;', 'Keywords=notes;sticky;reminders;'])
     directory = args.applications_dir.expanduser()
     directory.mkdir(parents=True, exist_ok=True)
     target = directory / 'sticky-notes.desktop'
