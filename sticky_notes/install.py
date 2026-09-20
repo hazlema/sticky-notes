@@ -100,6 +100,11 @@ def main():
         target.write_text(autostart, encoding='utf-8')
         print(f'Installed: {target}')
         print('Sticky notes will restore automatically at login.')
+    else:
+        target = args.autostart_dir.expanduser() / 'sticky-notes.desktop'
+        if target.exists():
+            print(f'Left the existing login autostart entry in place: {target}')
+            print('Remove it with: python3 -m sticky_notes.install --uninstall')
     return 0
 
 

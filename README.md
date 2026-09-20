@@ -83,13 +83,13 @@ The system bell may be silent depending on your desktop/audio settings. Raising 
 
 The installer manages login startup: it asks `Start notes automatically at login? [Y/n]` and creates `~/.config/autostart/sticky-notes.desktop` (or the corresponding location under `$XDG_CONFIG_HOME`) when you accept. At login the entry runs `python3 -m sticky_notes` without `--editor`, quietly restoring visible notes and resuming timers without opening a browser. Hidden notes stay hidden unless a reminder comes due. Your application-menu shortcut still includes `--editor`, so clicking the icon opens the editor.
 
-To enable login startup later, rerun `python3 -m sticky_notes.install --autostart`. To disable it, delete the autostart file (`--uninstall` also removes it):
+To enable login startup later, rerun `python3 -m sticky_notes.install --autostart`. To disable it, delete the autostart file (`--uninstall` removes it along with the menu entry):
 
 ```sh
 rm "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/sticky-notes.desktop"
 ```
 
-Avoid adding a hand-written command in your desktop's Startup Applications dialog: desktop `Exec` lines are not shell commands, so `cd` and `;` fail silently there. The installer writes the entry with the correct working directory instead.
+Avoid adding a hand-written command in your desktop's Startup Applications dialog: desktop `Exec` lines are not shell commands, so `cd` and `;` fail silently there. The installer writes the entry with the correct working directory instead. If you previously added a startup command for Sticky Notes by hand, remove that entry from your desktop's Startup Applications settings so it does not run alongside the installer's entry.
 
 After updating from an older version, quit the running app once and rerun `python3 -m sticky_notes.install` so your shortcuts pick up the current options.
 

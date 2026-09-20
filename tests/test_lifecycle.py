@@ -49,6 +49,16 @@ class LauncherTests(unittest.TestCase):
             self.assertTrue((Path(applications) / 'sticky-notes.desktop').exists())
             self.assertFalse((Path(autostart) / 'sticky-notes.desktop').exists())
 
+    def test_no_autostart_with_existing_entry_prints_notice(self):
+        with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
+            autostart_path = Path(autostart)
+            existing = autostart_path / 'sticky-notes.desktop'
+            existing.write_text('[Desktop Entry]\nName=Sticky Notes\n', encoding='utf-8')
+            result = self.run_install(applications, autostart, '--no-autostart')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(existing.exists())
+            self.assertIn('Left the existing login autostart entry in place', result.stdout)
+
     def test_non_tty_install_skips_login_entry_with_hint(self):
         with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
             result = self.run_install(applications, autostart)
@@ -58,7 +68,8 @@ class LauncherTests(unittest.TestCase):
 
     def test_uninstall_removes_both_entries_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
-            self.run_install(applications, autostart, '--autostart')
+            setup = self.run_install(applications, autostart, '--autostart')
+            self.assertEqual(setup.returncode, 0, setup.stderr)
             result = self.run_install(applications, autostart, '--uninstall')
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse((Path(applications) / 'sticky-notes.desktop').exists())
