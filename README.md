@@ -6,7 +6,7 @@ Paper-colored notes that float above your desktop, with a local web editor and o
 
 ## Install on a new computer
 
-Requirements: Linux, Python 3.10+, Tkinter, an X11 desktop session, and a web browser. There are no pip or npm dependencies and no build step.
+Requirements: Linux with an X11 display (including an accessible XWayland display), Python 3.10 or newer, Tkinter, and a web browser. There are no pip or npm dependencies and no build step. A Wayland compositor may limit XWayland stacking behavior; this app targets X11.
 
 On Debian/Ubuntu:
 
@@ -19,26 +19,18 @@ python3 -m sticky_notes.install
 python3 -m sticky_notes --editor
 ```
 
-For a private repository, authenticate to GitHub first. With the GitHub CLI:
+On Fedora, install the prerequisites with `sudo dnf install git python3 python3-tkinter`, then use the same clone and launch commands. For a private repository, authenticate to GitHub first (for example `gh auth login`, then `gh repo clone hazlema/sticky-notes`).
+
+The installer creates the application-menu launcher at `~/.local/share/applications/sticky-notes.desktop` (or the corresponding location under `$XDG_DATA_HOME`) and offers to start your notes automatically at login. Answer the prompt, or decide ahead of time in scripts:
 
 ```sh
-gh auth login
-gh repo clone hazlema/sticky-notes
-cd sticky-notes
-python3 -m sticky_notes.install
+python3 -m sticky_notes.install --autostart     # install the login entry without asking
+python3 -m sticky_notes.install --no-autostart  # skip the login entry without asking
 ```
 
-On Fedora, install the prerequisites with `sudo dnf install git python3 python3-tkinter`, then use the same clone and launch commands.
-
-The installer creates `~/.local/share/applications/sticky-notes.desktop` (or the corresponding location under `$XDG_DATA_HOME`). It points to this checkout and the Python interpreter used for installation. Keep the checkout in a permanent location. If you move it, run the installer again from its new location.
+Both entries point to this checkout and the Python interpreter used for installation. Keep the checkout in a permanent location. If you move it, run the installer again from its new location.
 
 ## Open from your application menu
-
-Install the Sticky Notes icon once, from this project directory:
-
-```sh
-python3 -m sticky_notes.install
-```
 
 Find **Sticky Notes** in your application menu and pin it to your launcher if you like.
 
@@ -49,8 +41,6 @@ Find **Sticky Notes** in your application menu and pin it to your launcher if yo
 
 The Python process remains running because it owns the desktop windows. Reopening the editor reuses that process; it does not create another set of notes or change which notes are hidden. **Quit notes app** is the separate action that closes all note windows and stops timers.
 
-Keep this project folder in place; the installed icon points here.
-
 ## Run from a terminal
 
 From this directory:
@@ -59,9 +49,7 @@ From this directory:
 python3 -m sticky_notes
 ```
 
-A plain launch restores your saved desktop notes and starts reminders without opening a browser. This is suitable for login/startup commands. To create or edit notes, click the installed icon or run `python3 -m sticky_notes --editor`. Closing the browser leaves the notes running.
-
-Requirements: Linux with an X11 display (including an accessible XWayland display), Python 3.10 or newer, and Tkinter. On Debian/Ubuntu, install Tkinter with `sudo apt install python3-tk`; on Fedora use `sudo dnf install python3-tkinter`. A Wayland compositor may limit XWayland stacking behavior; this app targets X11.
+A plain launch restores your saved desktop notes and starts reminders without opening a browser. To create or edit notes, click the installed icon or run `python3 -m sticky_notes --editor`. Closing the browser leaves the notes running.
 
 ```sh
 python3 -m sticky_notes --editor     # Open or reopen the editor
@@ -90,6 +78,20 @@ The operating system's window manager honors the always-on-top request. Notes re
 Select **Set a timer…**, choose **Hours** (0–24) and **Minutes** (0–60), and save. Both dropdowns start at 0; choose a total of at least 1 minute. For example, 1 hour and 30 minutes sets a 90-minute timer. Minutes can be 60, so 24 hours plus 60 minutes is a 25-hour timer. When the timer expires, the app shows and raises the note, highlights it, and requests a system bell. Use Dismiss or Snooze 5 min on the note, or the corresponding controls in the editor. Pending timers can be cancelled in the editor.
 
 The system bell may be silent depending on your desktop/audio settings. Raising a note does not deliberately move keyboard focus. Timers work while the app is running; they do not launch a stopped app or wake a suspended computer. A missed reminder fires when you next start the app. An already active alert stays active across restarts without repeatedly beeping. Hiding an active alert keeps it hidden until you show it or a snoozed reminder comes due.
+
+## Start notes automatically at login
+
+The installer manages login startup: it asks `Start notes automatically at login? [Y/n]` and creates `~/.config/autostart/sticky-notes.desktop` (or the corresponding location under `$XDG_CONFIG_HOME`) when you accept. At login the entry runs `python3 -m sticky_notes` without `--editor`, quietly restoring visible notes and resuming timers without opening a browser. Hidden notes stay hidden unless a reminder comes due. Your application-menu shortcut still includes `--editor`, so clicking the icon opens the editor.
+
+To enable login startup later, rerun `python3 -m sticky_notes.install --autostart`. To disable it, delete the autostart file (`--uninstall` also removes it):
+
+```sh
+rm "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/sticky-notes.desktop"
+```
+
+Avoid adding a hand-written command in your desktop's Startup Applications dialog: desktop `Exec` lines are not shell commands, so `cd` and `;` fail silently there. The installer writes the entry with the correct working directory instead.
+
+After updating from an older version, quit the running app once and rerun `python3 -m sticky_notes.install` so your shortcuts pick up the current options.
 
 ## Saved data
 
@@ -126,7 +128,19 @@ Restoring replaces the current notes, so back up an existing file first if it co
 
 ## Update
 
-Quit the app, then run these commands from your checkout:
+Stop the running app before updating so the old code is not still holding your notes: use **Quit notes app** in the editor (this saves its last changes), or press Ctrl+C in the terminal that launched it. Confirm nothing is still running:
+
+```sh
+pgrep -af sticky_notes   # no output means the app is stopped
+```
+
+If an instance is still listed and you cannot reach its editor, stop it with:
+
+```sh
+pkill -f "python3 -m sticky_notes"
+```
+
+Then, from your checkout:
 
 ```sh
 git pull --ff-only
@@ -135,6 +149,16 @@ python3 -m sticky_notes
 ```
 
 Saved notes are separate from the checkout and survive updates.
+
+## Uninstall
+
+Quit the app, then remove the menu entry and the login autostart entry with one command from this directory:
+
+```sh
+python3 -m sticky_notes.install --uninstall
+```
+
+You can then remove the cloned project directory. Your saved notes remain in the separate data directory unless you explicitly delete them.
 
 ## Troubleshooting
 
@@ -146,28 +170,6 @@ Saved notes are separate from the checkout and survive updates.
 - **No sound:** the app requests the X11 system bell; your desktop may mute it. Notes still appear and highlight.
 - **Notes disappear when closing the terminal:** launching from a terminal may tie the process to that terminal. Use the installed application-menu icon for normal desktop use.
 - **Invalid saved data:** the app preserves the file and reports an error. Restore a known-good backup while the app is stopped.
-
-## Start notes automatically at login
-
-The app does not enable login startup automatically. In your desktop's Startup Applications settings, add a command like this, replacing the path with your actual checkout:
-
-```sh
-sh -c 'cd /path/to/sticky-notes && exec python3 -m sticky_notes'
-```
-
-Do not add `--editor` to the startup command: the default restores visible notes and resumes timers silently. Hidden notes stay hidden unless a reminder comes due. Your normal application-menu shortcut includes `--editor`, so clicking the icon still opens the editor.
-
-After updating from an older version, quit the running app once and rerun `python3 -m sticky_notes.install` so your shortcut picks up `--editor`.
-
-## Uninstall
-
-Quit the app, then remove its menu entry:
-
-```sh
-rm "${XDG_DATA_HOME:-$HOME/.local/share}/applications/sticky-notes.desktop"
-```
-
-You can then remove the cloned project directory. Your saved notes remain in the separate data directory unless you explicitly delete them.
 
 ## Development and tests
 
@@ -204,7 +206,7 @@ Project layout:
 - `sticky_notes/desktop.py`: floating Tk windows.
 - `sticky_notes/server.py`: local HTTP API and Tk-thread command queue.
 - `sticky_notes/session.py`: discovery and reopening of the running instance.
-- `sticky_notes/install.py`: application-menu launcher installation.
+- `sticky_notes/install.py`: application-menu launcher and login autostart installation.
 - `sticky_notes/web/`: browser editor; served directly without a build.
 - `tests/`: model, desktop, HTTP, lifecycle, and process integration tests.
 
