@@ -55,3 +55,18 @@ class LauncherTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse((Path(autostart) / 'sticky-notes.desktop').exists())
             self.assertIn('--autostart', result.stdout)
+
+    def test_uninstall_removes_both_entries_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
+            self.run_install(applications, autostart, '--autostart')
+            result = self.run_install(applications, autostart, '--uninstall')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((Path(applications) / 'sticky-notes.desktop').exists())
+            self.assertFalse((Path(autostart) / 'sticky-notes.desktop').exists())
+            again = self.run_install(applications, autostart, '--uninstall')
+            self.assertEqual(again.returncode, 0, again.stderr)
+
+    def test_uninstall_rejects_autostart_flags(self):
+        with tempfile.TemporaryDirectory() as applications, tempfile.TemporaryDirectory() as autostart:
+            result = self.run_install(applications, autostart, '--uninstall', '--autostart')
+            self.assertEqual(result.returncode, 2)

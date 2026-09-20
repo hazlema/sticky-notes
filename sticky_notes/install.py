@@ -49,8 +49,23 @@ def wants_autostart(args):
         print('Please answer y or n.')
 
 
+def uninstall(applications_dir, autostart_dir):
+    removed = False
+    for target in (applications_dir / 'sticky-notes.desktop', autostart_dir / 'sticky-notes.desktop'):
+        try:
+            target.unlink()
+        except FileNotFoundError:
+            continue
+        print(f'Removed: {target}')
+        removed = True
+    if not removed:
+        print('Nothing to remove; no Sticky Notes desktop entries were installed.')
+    print('Saved notes were not touched.')
+    return 0
+
+
 def main():
-    parser = argparse.ArgumentParser(description='Install the Sticky Notes launcher and optional login autostart for this user.')
+    parser = argparse.ArgumentParser(description='Install or remove the Sticky Notes launcher and login autostart entry for this user.')
     parser.add_argument('--applications-dir', type=Path,
                         default=Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local/share') / 'applications')
     parser.add_argument('--autostart-dir', type=Path,
@@ -60,7 +75,13 @@ def main():
                                  help='install the login autostart entry without asking')
     autostart_flags.add_argument('--no-autostart', action='store_true',
                                  help='skip the login autostart entry without asking')
+    parser.add_argument('--uninstall', action='store_true',
+                        help='remove the application-menu launcher and login autostart entry')
     args = parser.parse_args()
+    if args.uninstall:
+        if args.autostart or args.no_autostart:
+            parser.error('--uninstall cannot be combined with --autostart or --no-autostart')
+        return uninstall(args.applications_dir.expanduser(), args.autostart_dir.expanduser())
     project = Path(__file__).resolve().parent.parent
     entry = desktop_entry(project, 'Open your sticky note editor; notes keep running when the editor closes',
                           ' --editor', ['Categories=Utility;', 'Keywords=notes;sticky;reminders;'])
