@@ -2,6 +2,7 @@
 import time
 import tkinter as tk
 from tkinter import simpledialog
+from .sound import Alarm
 
 
 def clamp_geometry(x, y, width, height, screen_width, screen_height):
@@ -212,6 +213,7 @@ class Desktop:
     def __init__(self, root, store, open_editor):
         self.root, self.store, self.open_editor = root, store, open_editor
         self.windows = {}
+        self.alarm = Alarm(root)
 
     def action(self, command, payload):
         try:
@@ -234,7 +236,7 @@ class Desktop:
         for identifier in alert_ids:
             self.windows[identifier].window.lift()
         if alert_ids:
-            self.root.bell()
+            self.alarm.ring()
 
     def close(self):
         for window in self.windows.values():

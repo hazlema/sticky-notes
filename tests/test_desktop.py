@@ -43,14 +43,14 @@ class DesktopTests(unittest.TestCase):
         self.desktop.refresh()
         self.assertNotIn(note['id'], self.desktop.windows)
 
-    def test_alert_reveal_and_bell_only_once(self):
+    def test_alert_reveal_and_alarm_only_once(self):
         note = self.store.execute('create', {'minutes': 1}, 100)
         self.store.execute('visibility', {'id': note['id'], 'visible': False}, 100)
         self.desktop.refresh()
-        with patch.object(self.root, 'bell') as bell:
+        with patch.object(self.desktop.alarm, 'ring') as ring:
             self.desktop.refresh(self.store.tick(160))
             self.desktop.refresh(self.store.tick(161))
-            bell.assert_called_once()
+            ring.assert_called_once()
         view = self.desktop.windows[note['id']]
         self.assertNotEqual(view.window.state(), 'withdrawn')
         self.assertEqual(view.window.cget('highlightbackground'), '#ce6522')

@@ -15,6 +15,8 @@ import urllib.request
 @unittest.skipUnless(os.environ.get('DISPLAY'), 'An X11 display is required')
 class IntegrationTests(unittest.TestCase):
     def start_app(self, directory, env=None):
+        env = dict(os.environ if env is None else env)
+        env['STICKY_NOTES_NO_AUDIO'] = '1'
         process = subprocess.Popen([sys.executable, '-m', 'sticky_notes',
                                     '--port', '0', '--data-dir', directory],
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)

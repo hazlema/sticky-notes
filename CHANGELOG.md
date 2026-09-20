@@ -9,6 +9,7 @@ Notable changes to Sticky Notes, newest first. The project is tracked by date ra
 - `python3 -m sticky_notes.install --uninstall` removes the application-menu launcher and the login autostart entry in one step.
 
 ### Changed
+- Reminders now play the desktop theme's alarm sound (`alarm-clock-elapsed` via PulseAudio/PipeWire) instead of a single quiet system bell; without a sound player the bell rings three times. Set `STICKY_NOTES_NO_AUDIO` to disable playback.
 - README restructured: one install path, deduplicated requirements, explicit stop-before-upgrade steps, and installer-managed login startup instead of a hand-written startup command.
 
 ## 2026-09-19

@@ -75,9 +75,9 @@ The operating system's window manager honors the always-on-top request. Notes re
 
 ## Reminders
 
-Select **Set a timer…**, choose **Hours** (0–24) and **Minutes** (0–60), and save. Both dropdowns start at 0; choose a total of at least 1 minute. For example, 1 hour and 30 minutes sets a 90-minute timer. Minutes can be 60, so 24 hours plus 60 minutes is a 25-hour timer. When the timer expires, the app shows and raises the note, highlights it, and requests a system bell. Use Dismiss or Snooze 5 min on the note, or the corresponding controls in the editor. Pending timers can be cancelled in the editor.
+Select **Set a timer…**, choose **Hours** (0–24) and **Minutes** (0–60), and save. Both dropdowns start at 0; choose a total of at least 1 minute. For example, 1 hour and 30 minutes sets a 90-minute timer. Minutes can be 60, so 24 hours plus 60 minutes is a 25-hour timer. When the timer expires, the app shows and raises the note, highlights it, and plays your desktop theme's alarm sound (falling back to three system bells if no sound player is available). Use Dismiss or Snooze 5 min on the note, or the corresponding controls in the editor. Pending timers can be cancelled in the editor.
 
-The system bell may be silent depending on your desktop/audio settings. Raising a note does not deliberately move keyboard focus. Timers work while the app is running; they do not launch a stopped app or wake a suspended computer. A missed reminder fires when you next start the app. An already active alert stays active across restarts without repeatedly beeping. Hiding an active alert keeps it hidden until you show it or a snoozed reminder comes due.
+The alarm uses the freedesktop sound theme (`alarm-clock-elapsed`) through PulseAudio or PipeWire (`paplay` or `pw-play`); set the `STICKY_NOTES_NO_AUDIO` environment variable to disable playback and keep only the bell. Raising a note does not deliberately move keyboard focus. Timers work while the app is running; they do not launch a stopped app or wake a suspended computer. A missed reminder fires when you next start the app. An already active alert stays active across restarts without repeatedly beeping. Hiding an active alert keeps it hidden until you show it or a snoozed reminder comes due.
 
 ## Start notes automatically at login
 
@@ -169,7 +169,7 @@ You can then remove the cloned project directory. Your saved notes remain in the
 - **Port already in use:** use `python3 -m sticky_notes --port 0` to choose a free port, or specify another port. Subsequent launches reuse the existing instance's actual port.
 - **Editor says disconnected:** click the Sticky Notes icon again. Each app restart creates a fresh authenticated editor link, so an old browser tab or bookmark may no longer connect.
 - **An older instance is running but cannot be reopened:** quit it once from its editor or launching terminal, then start the updated app.
-- **No sound:** the app requests the X11 system bell; your desktop may mute it. Notes still appear and highlight.
+- **No sound:** the alarm needs `paplay` or `pw-play` and the freedesktop sound theme (`/usr/share/sounds/freedesktop/`); without them the app falls back to the X11 system bell, which your desktop may mute. Notes still appear and highlight.
 - **Notes disappear when closing the terminal:** launching from a terminal may tie the process to that terminal. Use the installed application-menu icon for normal desktop use.
 - **Invalid saved data:** the app preserves the file and reports an error. Restore a known-good backup while the app is stopped.
 
